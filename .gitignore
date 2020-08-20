@@ -1,0 +1,6 @@
+.vscode/
+data/
+samsync/__pycache__
+
+tests/.pytest_cache
+tests/__pycache__
