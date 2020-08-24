@@ -1,6 +1,7 @@
 import pytest
 import json
 import shutil
+import samsync
 
 
 @pytest.fixture(scope="class")
@@ -30,6 +31,8 @@ def create_sample_data(tmpdir_factory):
     shutil.rmtree(config_dir)
 
 
-@pytest.fixture(scope="class")
-def client():
-    pass
+@pytest.fixture()
+def client(mocker):
+    """Returns a mock Samanage api object"""
+    client_obj = mocker.patch('samsync.Samanage')
+    return client_obj
