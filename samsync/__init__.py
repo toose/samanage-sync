@@ -33,9 +33,12 @@ def is_updated(local_device, remote_device):
     """Returns True if the remote_device attributes are up-to-date
     with the local_device attributes. False otherwise.
     """
-    if remote_device.owner is None:
+    remote_owner = remote_device.owner['name']
+    local_owner = local_device['owner']
+    
+    if remote_owner is None or local_owner is None:
         return False
-    elif local_device['owner'].lower() == remote_device.owner['name'].lower():
+    elif remote_owner.lower() == local_owner.lower():
         return True
     return False
 
@@ -62,7 +65,7 @@ def main():
     local_devices = load_json(args.input)
     
     for local_device in local_devices:
-        logger.debug('Device: %s - Owner: %s', (local_device['name'], local_device['owner']))
+        logger.debug('Device: %s - Owner: %s' % (local_device['name'], local_device['owner']))
         remote_device = fetch_resource(client, local_device, 'hardwares')
         if remote_device:
             if not is_updated(local_device, remote_device):
@@ -70,5 +73,4 @@ def main():
         
 
 if __name__ == '__main__':
-    
     main()

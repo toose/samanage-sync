@@ -1,7 +1,13 @@
 .vscode/
 .coverage
+
+__pycache__/
+logs/
+
 data/
 samsync/__pycache__
 
 tests/.pytest_cache
 tests/__pycache__
+
+

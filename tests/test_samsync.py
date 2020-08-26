@@ -60,7 +60,18 @@ class TestSamSync:
             'local_device': {'name': 'PC01', 'owner': 'John Smith'},
             'remote_device': {'owner': {'name': 'Steve Jones'}},
             'is_updated': False
+        },
+        {
+            'local_device': {'name': 'PC01', 'owner': None},
+            'remote_device': {'owner': {'name': 'Steve Jones'}},
+            'is_updated': False
+        },
+        {
+            'local_device': {'name': 'PC01', 'owner': 'John Smith'},
+            'remote_device': {'owner': {'name': None}},
+            'is_updated': False
         }
+        
     ]
     @pytest.mark.parametrize('case', device_test_case)
     def test_is_updated(self, case):
