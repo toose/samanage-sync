@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 import json
+import os
 import sys
 import argparse
+from samsync.logger import get_logger
 from samanage3 import Samanage
 
+
+if not os.path.exists('logs'): os.mkdir('logs')
+logger = get_logger('logs/samsync.log')
 
 def load_json(path):
     """Loads a json file of local devices, along with their owners"""
@@ -38,12 +43,13 @@ def _build_payload(user):
     """Builds the payload object to update the remote resource"""
     return {'owner': {'email': f'{user.email}'}}
 
-def update(client, local_device, remote_device):
+def update(client, local_device, remote_device):        
     """Update the resource metadata"""
     user = fetch_resource(client, local_device, 'users')
     if user:
         payload = _build_payload(user)
         client.put('hardwares', payload, remote_device.id)
+        logger.info(f'Updating {remote_device.name} with owner {user.name}')
 
 
 def main():
@@ -56,6 +62,7 @@ def main():
     local_devices = load_json(args.input)
     
     for local_device in local_devices:
+        logger.debug('Device: %s - Owner: %s', (local_device['name'], local_device['owner']))
         remote_device = fetch_resource(client, local_device, 'hardwares')
         if remote_device:
             if not is_updated(local_device, remote_device):
@@ -63,4 +70,5 @@ def main():
         
 
 if __name__ == '__main__':
+    
     main()
