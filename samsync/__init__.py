@@ -71,7 +71,3 @@ def main():
         if remote_device:
             if not is_updated(local_device, remote_device):
                 update(client, local_device, remote_device)
-        
-
-if __name__ == '__main__':
-    main()
