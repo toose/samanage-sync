@@ -68,7 +68,7 @@ class TestSamSync:
         },
         {
             'local_device': {'name': 'PC01', 'owner': 'John Smith'},
-            'remote_device': {'owner': {'name': None}},
+            'remote_device': {'owner': None},
             'is_updated': False
         }
         
@@ -86,7 +86,7 @@ class TestSamSync:
     build_payload_test_cases = [
         {'user': {'email': 'testuser@email.com'}},
         {'user': {'email': 'johnkerry@gmail.com'}},
-        {'user': {'email': 'jmokey@hdnet.com'}}
+        {'user': {'email': 'jmokey@hdnet.com'}},
     ]
     @pytest.mark.parametrize('case', build_payload_test_cases)
     def test_build_payload(self, case):
@@ -99,6 +99,13 @@ class TestSamSync:
         expected_payload = {'owner': {'email': f'{user.email}'}}
         actual_payload = _build_payload(user)
         
+        assert expected_payload == actual_payload
+
+    def test_build_payload_when_user_is_none(self):
+        user = None
+        expected_payload = {'owner': None}
+        actual_payload = _build_payload()
+
         assert expected_payload == actual_payload
     
     def test_update(self, client, mocker):
@@ -123,3 +130,7 @@ class TestSamSync:
         samsync.Samanage.put.assert_called_with('hardwares', 
                                                 payload,
                                                 remote_device.id)
+
+    def test_update_when_initial_user_lookup_returns_none(self, client, mocker):
+        """fetch_resource should return a spare user to assign to the hardware"""
+        pass

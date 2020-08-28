@@ -32,27 +32,28 @@ def fetch_resource(client, record, record_type):
 def is_updated(local_device, remote_device):
     """Returns True if the remote_device attributes are up-to-date
     with the local_device attributes. False otherwise.
-    """
-    remote_owner = remote_device.owner['name']
-    local_owner = local_device['owner']
-    
-    if remote_owner is None or local_owner is None:
+    """    
+    if remote_device.owner is None or local_device['owner'] is None:
         return False
-    elif remote_owner.lower() == local_owner.lower():
+    elif remote_device.owner['name'].lower() == local_device['owner'].lower():
         return True
     return False
 
-def _build_payload(user):
-    """Builds the payload object to update the remote resource"""
+def _build_payload(user=None):
+    """Builds the payload object to update the remote resource
+    If the user is None, return a payload object where the owner is
+    None.
+    """
+    if user is None:
+        return {'owner': None}
     return {'owner': {'email': f'{user.email}'}}
 
 def update(client, local_device, remote_device):        
-    """Update the resource metadata"""
+    """Update resource metadata"""
     user = fetch_resource(client, local_device, 'users')
-    if user:
-        payload = _build_payload(user)
-        client.put('hardwares', payload, remote_device.id)
-        logger.info(f'Updating {remote_device.name} with owner {user.name}')
+    payload = _build_payload(user)
+    client.put('hardwares', payload, remote_device.id)
+    logger.info(f'Updating {remote_device.name} with owner {user}')
 
 
 def main():
