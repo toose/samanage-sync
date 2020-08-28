@@ -84,9 +84,24 @@ class TestSamSync:
         assert is_updated(local_device, remote_device) is case['is_updated']
 
     build_payload_test_cases = [
-        {'user': {'email': 'testuser@email.com'}},
-        {'user': {'email': 'johnkerry@gmail.com'}},
-        {'user': {'email': 'jmokey@hdnet.com'}},
+        {
+            'user': {
+                'email': 'testuser@email.com',
+                'department': {'name': 'Research and Development'}
+            }
+        },
+        {
+            'user': {
+                'email': 'johnkerry@gmail.com',
+                'department': {'name': 'Information technology'}
+            }
+        },
+        {
+            'user': {
+                'email': 'jmokey@hdnet.com',
+                'department': {'name': 'Finance and Accounting'}
+            }
+        },
     ]
     @pytest.mark.parametrize('case', build_payload_test_cases)
     def test_build_payload(self, case):
@@ -96,8 +111,11 @@ class TestSamSync:
         # THEN return a payload data structure that will be used to update
         # the resouce via rest API
         user = User(case['user'])
-        expected_payload = {'owner': {'email': f'{user.email}'}}
         actual_payload = _build_payload(user)
+        expected_payload = {
+            'owner': {'email': f'{user.email}'},
+            'department': {'name': '%s' % user.department['name']}
+            }
         
         assert expected_payload == actual_payload
 
@@ -113,7 +131,10 @@ class TestSamSync:
         # GIVEN a mock client and a mock user resource object
         # WHEN invoking update()
         # THEN client.put() is invoked with specific parameters
-        payload = {'owner': {'email': 'mtorres@email.com'}}
+        payload = {
+            'owner': {'email': 'mtorres@email.com'},
+            'department': {'name': 'Information Technology'}
+        }
         local_device = {'name': 'PC01', 'owner': 'Michael Torres'}
         remote_device = Hardware({
             'name': 'PC01', 
@@ -123,14 +144,15 @@ class TestSamSync:
             }
         })
 
-        return_value = User({'name': 'Michael Torres', 'email': 'mtorres@email.com'})
+        return_value = User({
+            'name': 'Michael Torres', 
+            'email': 'mtorres@email.com',
+            'department': {'name': 'Information Technology'}
+        })
         mocker.patch.object(samsync, 'fetch_resource', return_value=return_value)
         
         update(client, local_device, remote_device)
         samsync.Samanage.put.assert_called_with('hardwares', 
                                                 payload,
                                                 remote_device.id)
-
-    def test_update_when_initial_user_lookup_returns_none(self, client, mocker):
-        """fetch_resource should return a spare user to assign to the hardware"""
-        pass
+                                                

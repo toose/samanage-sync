@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import json
 import os
 import sys
@@ -46,7 +47,10 @@ def _build_payload(user=None):
     """
     if user is None:
         return {'owner': None}
-    return {'owner': {'email': f'{user.email}'}}
+    return {
+        'owner': {'email': f'{user.email}'},
+        'department': {'name': '%s' % user.department['name']}
+    }
 
 def update(client, local_device, remote_device):        
     """Update resource metadata"""
