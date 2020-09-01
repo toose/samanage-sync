@@ -51,37 +51,68 @@ class TestSamSync:
         assert resource is None
     
     device_test_case = [
-        {
+        {   # Owner and department are updated
             'local_device': {'name': 'PC01', 'owner': 'John Smith'},
-            'remote_device': {'owner': {'name': 'John Smith'}},
+            'remote_device': {
+                'owner': {'name': 'John Smith'},
+                'department': {'name': 'Information Technology'}
+            },
             'is_updated': True
         },
-        {
+        {   # Device department needs updating
             'local_device': {'name': 'PC01', 'owner': 'John Smith'},
-            'remote_device': {'owner': {'name': 'Steve Jones'}},
+            'remote_device': {
+                'owner': {'name': 'John Smith'},
+                'department': {'name': 'Accounting'}
+            },
             'is_updated': False
         },
-        {
+        {   # Owner and device department needs updating
+            'local_device': {'name': 'PC01', 'owner': 'John Smith'},
+            'remote_device': {
+                'owner': {'name': 'Steve Jones'},
+                'department': {'name': 'Research and Development'}
+            },
+            'is_updated': False
+        },
+        {   # Local owner is None
             'local_device': {'name': 'PC01', 'owner': None},
-            'remote_device': {'owner': {'name': 'Steve Jones'}},
+            'remote_device': {
+                'owner': {'name': 'Steve Jones'},
+                'department': {'name': 'Accounting'}
+            },
             'is_updated': False
         },
-        {
+        {   # Remote device owner is None
             'local_device': {'name': 'PC01', 'owner': 'John Smith'},
-            'remote_device': {'owner': None},
+            'remote_device': {
+                'owner': None,
+                'department': {'name': 'Information Technology'}
+            },
             'is_updated': False
         }
         
     ]
     @pytest.mark.parametrize('case', device_test_case)
-    def test_is_updated(self, case):
+    def test_is_updated(self, case, mock_user):
         """Should return True or False"""
         # GIVEN mock local and remote device objects
         # WHEN remote_device needs updating
         # THEN return False, otherwise return True
         remote_device = Hardware(case['remote_device'])
         local_device = case['local_device']
-        assert is_updated(local_device, remote_device) is case['is_updated']
+        assert is_updated(local_device, remote_device, mock_user) is case['is_updated']
+
+    def test_is_updated_when_user_is_returns_none(self):
+        user = User({'owner': {'name': ''}, 'department': {'name': ''}})
+        local_device = {'name': 'PC01', 'owner': 'John Smith'}
+        remote_device = Hardware({
+            'owner': {'name': 'John Smith'},
+            'department': {'name': 'Information Technology'}
+        })
+
+        assert is_updated(local_device, remote_device, user) is False
+
 
     build_payload_test_cases = [
         {
@@ -102,6 +133,12 @@ class TestSamSync:
                 'department': {'name': 'Finance and Accounting'}
             }
         },
+        {
+            'user': {
+                'email': 'testuser@email.com',
+                'department': None
+            }
+        }
     ]
     @pytest.mark.parametrize('case', build_payload_test_cases)
     def test_build_payload(self, case):
@@ -118,15 +155,8 @@ class TestSamSync:
             }
         
         assert expected_payload == actual_payload
-
-    def test_build_payload_when_user_is_none(self):
-        user = None
-        expected_payload = {'owner': None}
-        actual_payload = _build_payload()
-
-        assert expected_payload == actual_payload
     
-    def test_update(self, client, mocker):
+    def test_update(self, client, mocker, mock_user):
         """Should call client.post"""
         # GIVEN a mock client and a mock user resource object
         # WHEN invoking update()
@@ -144,14 +174,7 @@ class TestSamSync:
             }
         })
 
-        return_value = User({
-            'name': 'Michael Torres', 
-            'email': 'mtorres@email.com',
-            'department': {'name': 'Information Technology'}
-        })
-        mocker.patch.object(samsync, 'fetch_resource', return_value=return_value)
-        
-        update(client, local_device, remote_device)
+        update(client, local_device, remote_device, mock_user)
         samsync.Samanage.put.assert_called_with('hardwares', 
                                                 payload,
                                                 remote_device.id)

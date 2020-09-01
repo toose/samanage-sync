@@ -5,7 +5,7 @@ import os
 import sys
 import argparse
 from samsync.logger import get_logger
-from samanage3 import Samanage
+from samanage3 import Samanage, User
 
 
 if not os.path.exists('logs'): os.mkdir('logs')
@@ -30,31 +30,34 @@ def fetch_resource(client, record, record_type):
     except IndexError:
         return None
 
-def is_updated(local_device, remote_device):
+def is_updated(local_device, remote_device, user):
     """Returns True if the remote_device attributes are up-to-date
     with the local_device attributes. False otherwise.
-    """    
-    if remote_device.owner is None or local_device['owner'] is None:
+    """
+    u_dept = user.department
+    l_owner = local_device['owner']
+    r_owner = remote_device.owner
+    r_dept = remote_device.department
+
+    if r_owner is None or l_owner is None or u_dept is None:
         return False
-    elif remote_device.owner['name'].lower() == local_device['owner'].lower():
-        return True
+    elif r_owner.get('name', '').lower() == l_owner.lower():
+        if u_dept.get('name').lower() == r_dept.get('name').lower():
+            return True
     return False
 
-def _build_payload(user=None):
-    """Builds the payload object to update the remote resource
-    If the user is None, return a payload object where the owner is
-    None.
-    """
-    if user is None:
-        return {'owner': None}
+def _build_payload(user):
+    """Builds the payload object to update the remote resource"""
+    if not isinstance(user.department, dict):
+        user.department = {'name': None}
+
     return {
         'owner': {'email': f'{user.email}'},
-        'department': {'name': '%s' % user.department['name']}
+        'department': {'name': '%s' % user.department.get('name', None)}
     }
 
-def update(client, local_device, remote_device):        
+def update(client, local_device, remote_device, user=None):        
     """Update resource metadata"""
-    user = fetch_resource(client, local_device, 'users')
     payload = _build_payload(user)
     client.put('hardwares', payload, remote_device.id)
     logger.info(f'Updating {remote_device.name} with owner {user}')
@@ -72,6 +75,9 @@ def main():
     for local_device in local_devices:
         logger.debug('Device: %s - Owner: %s' % (local_device['name'], local_device['owner']))
         remote_device = fetch_resource(client, local_device, 'hardwares')
+        user = fetch_resource(client, local_device, 'users')
+        if user is None:
+            user = User({'owner': {'name': None}, 'department': {'name': None}})
         if remote_device:
-            if not is_updated(local_device, remote_device):
-                update(client, local_device, remote_device)
+            if not is_updated(local_device, remote_device, user):
+                update(client, local_device, remote_device, user)
