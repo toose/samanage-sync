@@ -6,20 +6,20 @@ from samanage3 import User
 
 
 @pytest.fixture(scope="class")
-def create_sample_data(tmpdir_factory):
+def sample_input_data(tmpdir_factory):
     """Creates sample json data and saves to a temporary location on disk""" 
     inventory_data = [
         {
             "name": "PC01",
-            "description": "John Smith"
+            "owner": "John Smith"
         },
         {
             "name": "PC02",
-            "description": "Tom Jones"
+            "owner": "Tom Jones"
         },
         {
             "name": "PC03",
-            "description": None
+            "owner": None
         }
     ]
 

@@ -5,7 +5,7 @@ import os
 import sys
 import argparse
 from samsync.logger import get_logger
-from samanage3 import Samanage, User
+from samanage3 import Samanage, User, Hardware
 
 
 if not os.path.exists('logs'): os.mkdir('logs')
@@ -13,9 +13,19 @@ logger = get_logger('logs/samsync.log')
 
 def load_json(path):
     """Loads a json file of local devices, along with their owners"""
+    device_list = []
     with open(path, 'r') as file:
         content = file.read()
-    return json.loads(content)
+    json_device_list = json.loads(content)
+    
+    for item in json_device_list:
+        device = Hardware({
+            'name': item['name'], 
+            'owner': None if item['owner'] is None else {'name': item['owner']}
+        })
+        device_list.append(device)
+
+    return device_list
 
 def fetch_resource(client, record, record_type):
     """Fetches a resource item from the Samanage api"""
@@ -73,7 +83,7 @@ def main():
     local_devices = load_json(args.input)
     
     for local_device in local_devices:
-        logger.debug('Device: %s - Owner: %s' % (local_device['name'], local_device['owner']))
+        #logger.debug('Device: %s - Owner: %s' % (local_device['name'], local_device['owner']))
         remote_device = fetch_resource(client, local_device, 'hardwares')
         user = fetch_resource(client, local_device, 'users')
         if user is None:

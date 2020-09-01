@@ -5,19 +5,22 @@ from samsync import load_json, fetch_resource, is_updated, _build_payload, updat
 from samanage3 import Hardware, User
 
 
-@pytest.mark.usefixtures('create_sample_data')
+@pytest.mark.usefixtures('sample_input_data')
 class TestSamSync:
-    def test_load_json_data(self, create_sample_data):
+    def test_load_json_data(self, sample_input_data):
         """samsync.load_json should return a json object"""
         # GIVEN a sample configuration file
         # WHEN it is loaded
         # THEN there should be three items, with specific attributes
-        self.json_data = load_json(create_sample_data)
+        self.devices = load_json(sample_input_data)
 
-        assert len(self.json_data) == 3
-        assert self.json_data[0] == {'name': 'PC01', 'description': 'John Smith'}
-        assert self.json_data[1] == {'name': 'PC02', 'description': 'Tom Jones'}
-        assert self.json_data[2] == {'name': 'PC03', 'description': None}
+        assert len(self.devices) == 3
+        assert self.devices[0].name == 'PC01'
+        assert self.devices[0].owner == {'name': 'John Smith'}
+        assert self.devices[1].name == 'PC02'
+        assert self.devices[1].owner == {'name': 'Tom Jones'}
+        assert self.devices[2].name == 'PC03'
+        assert self.devices[2].owner == None
    
     def test_fetch_resource_hardware(self, client):
         """Should invoke client.get() with record_type == hardwares"""
