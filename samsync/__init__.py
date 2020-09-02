@@ -12,7 +12,15 @@ if not os.path.exists('logs'): os.mkdir('logs')
 logger = get_logger('logs/samsync.log')
 
 def load_json(path):
-    """Loads a json file of local devices, along with their owners"""
+    """Loads a json file of local devices, along with their owners
+    as samanage3.Hardware objects.
+
+    Args:
+        path (str): The file path to the input file
+    
+    Returns:
+        (list): of samanage3.Hardware device objects
+    """
     device_list = []
     with open(path, 'r') as file:
         content = file.read()
@@ -30,30 +38,28 @@ def load_json(path):
 def fetch_resource(client, record, record_type):
     """Fetches a resource item from the Samanage api"""
     if record_type == 'hardwares':
-        target = record['name']
+        target = record.name
     elif record_type == 'users':
-        target = record['owner']
-    else:
-        raise ValueError('record_type must be "hardwares" or "users"')
+        if record.owner is None:
+            return None
+        target = record.owner.get('name', None)
+
     try:
-        return client.get(record_type=record_type, search={'name': f'{target}'})[0]
+        return client.get(record_type=record_type, 
+                          search={'name': f'{target}'})[0]
     except IndexError:
         return None
 
-def is_updated(local_device, remote_device, user):
-    """Returns True if the remote_device attributes are up-to-date
-    with the local_device attributes. False otherwise.
+def is_updated(local, remote, user):
+    """Returns True if the remote device attributes are up-to-date
+    with the local device attributes. False otherwise.
     """
-    u_dept = user.department
-    l_owner = local_device['owner']
-    r_owner = remote_device.owner
-    r_dept = remote_device.department
-
-    if r_owner is None or l_owner is None or u_dept is None:
+    if local.owner is None or remote.owner is None or user.department is None:
         return False
-    elif r_owner.get('name', '').lower() == l_owner.lower():
-        if u_dept.get('name').lower() == r_dept.get('name').lower():
+    elif local.owner.get('name').lower() == remote.owner.get('name').lower():
+        if remote.department.get('name').lower() == user.department.get('name').lower():
             return True
+
     return False
 
 def _build_payload(user):
@@ -83,11 +89,12 @@ def main():
     local_devices = load_json(args.input)
     
     for local_device in local_devices:
-        #logger.debug('Device: %s - Owner: %s' % (local_device['name'], local_device['owner']))
+        logger.debug('Device: %s - Owner: %s' % (local_device.name, local_device.owner))
         remote_device = fetch_resource(client, local_device, 'hardwares')
-        user = fetch_resource(client, local_device, 'users')
-        if user is None:
-            user = User({'owner': {'name': None}, 'department': {'name': None}})
         if remote_device:
+            user = fetch_resource(client, local_device, 'users')
+            if user is None:
+                user = User({'owner': {'name': None}, 'department': {'name': None}})
             if not is_updated(local_device, remote_device, user):
                 update(client, local_device, remote_device, user)
+        

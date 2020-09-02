@@ -5,7 +5,7 @@ from samsync import load_json, fetch_resource, is_updated, _build_payload, updat
 from samanage3 import Hardware, User
 
 
-@pytest.mark.usefixtures('sample_input_data')
+@pytest.mark.usefixtures('sample_input_data', 'sample_output_data')
 class TestSamSync:
     def test_load_json_data(self, sample_input_data):
         """samsync.load_json should return a json object"""
@@ -22,40 +22,42 @@ class TestSamSync:
         assert self.devices[2].name == 'PC03'
         assert self.devices[2].owner == None
    
-    def test_fetch_resource_hardware(self, client):
+    def test_fetch_resource_hardware(self, client, sample_output_data):
         """Should invoke client.get() with record_type == hardwares"""
         # GIVEN a mock client object
         # WHEN fetch_resource is called
         # THEN assert  client.get() is called with specific arguments
-        local_device = {'name': 'PC01'}
-        resource = fetch_resource(client, local_device, 'hardwares')
-        samsync.Samanage.get.assert_called_with(record_type='hardwares', 
-                                                search={'name': 'PC01'})
+        for item in sample_output_data:
+            resource = fetch_resource(client, item, 'hardwares')
+            samsync.Samanage.get.assert_called_with(record_type='hardwares', 
+                                                search={'name': f'{item.name}'})
+        assert samsync.Samanage.get.call_count == 3
+        
 
-    def test_fetch_resource_user(self, client):
+    def test_fetch_resource_user(self, client, sample_output_data):
         """Should invoke client.get() with record_type == users"""
         # GIVEN a mock client object
         # WHEN fetch_resource is called
         # THEN assert  client.get() is called with specific arguments
-        local_device = {'owner': 'Tom Jones'}
-        resource = fetch_resource(client, local_device, 'users')
-        samsync.Samanage.get.assert_called_with(record_type='users', 
-                                                search={'name': 'Tom Jones'})
+        for item in sample_output_data:
+            resource = fetch_resource(client, item, 'users')
 
-    def test_fetch_hardware_returns_none_when_index_error_occurs(self, client, mocker):
+        assert samsync.Samanage.get.call_count == 2
+
+    def test_fetch_hardware_returns_none_when_index_error_occurs(self, client, mocker, sample_output_data):
         """Should return None when IndexError is encountered"""
         # GIVEN a mock client object
         # WHEN fetch_resource is called and an IndexError occurs
         # THEN fetch_resource returns None
+        device = sample_output_data[2]
         mocker.patch.object(samsync.Samanage, 'get', return_value=[])
-        local_device = {'name': 'PC01'}
-        resource = fetch_resource(client, local_device, 'hardwares')
+        resource = fetch_resource(client, device, 'hardwares')
 
         assert resource is None
     
     device_test_case = [
         {   # Owner and department are updated
-            'local_device': {'name': 'PC01', 'owner': 'John Smith'},
+            'local_device': {'name': 'PC01', 'owner': {'name':'John Smith'}},
             'remote_device': {
                 'owner': {'name': 'John Smith'},
                 'department': {'name': 'Information Technology'}
@@ -63,7 +65,7 @@ class TestSamSync:
             'is_updated': True
         },
         {   # Device department needs updating
-            'local_device': {'name': 'PC01', 'owner': 'John Smith'},
+            'local_device': {'name': 'PC01', 'owner': {'name': 'John Smith'}},
             'remote_device': {
                 'owner': {'name': 'John Smith'},
                 'department': {'name': 'Accounting'}
@@ -71,7 +73,7 @@ class TestSamSync:
             'is_updated': False
         },
         {   # Owner and device department needs updating
-            'local_device': {'name': 'PC01', 'owner': 'John Smith'},
+            'local_device': {'name': 'PC01', 'owner': {'name': 'John Smith'}},
             'remote_device': {
                 'owner': {'name': 'Steve Jones'},
                 'department': {'name': 'Research and Development'}
@@ -87,7 +89,7 @@ class TestSamSync:
             'is_updated': False
         },
         {   # Remote device owner is None
-            'local_device': {'name': 'PC01', 'owner': 'John Smith'},
+            'local_device': {'name': 'PC01', 'owner': {'name': 'John Smith'}},
             'remote_device': {
                 'owner': None,
                 'department': {'name': 'Information Technology'}
@@ -103,7 +105,7 @@ class TestSamSync:
         # WHEN remote_device needs updating
         # THEN return False, otherwise return True
         remote_device = Hardware(case['remote_device'])
-        local_device = case['local_device']
+        local_device = Hardware(case['local_device'])
         assert is_updated(local_device, remote_device, mock_user) is case['is_updated']
 
     def test_is_updated_when_user_is_returns_none(self):
