@@ -54,9 +54,9 @@ def is_updated(local, remote, user):
     """Returns True if the remote device attributes are up-to-date
     with the local device attributes. False otherwise.
     """
-    # If any of these values are None, return False to avoid calling .get
-    # on a NoneType (when it should be a dict)
-    if local.owner is None or remote.owner is None or user.department is None:
+    if local.owner is None and remote.owner is None and user.department is None:
+        return True
+    elif local.owner is None or remote.owner is None or user.department is None:
         return False
 
     local_owner = local.owner.get('name').lower()
@@ -72,15 +72,13 @@ def is_updated(local, remote, user):
 
 def _build_payload(user):
     """Builds the payload object to update the remote resource"""
-    if not isinstance(user.department, dict):
-        user.department = {'name': None}
-
+    owner = {'email': user.email} if user.email else None
     return {
-        'owner': {'email': f'{user.email}'},
-        'department': {'name': '%s' % user.department.get('name', None)}
+        'owner': owner,
+        'department': user.department
     }
 
-def update(client, local_device, remote_device, user=None):        
+def update(client, remote_device, user):        
     """Update resource metadata"""
     payload = _build_payload(user)
     client.put('hardwares', payload, remote_device.id)
@@ -102,7 +100,7 @@ def main():
         if remote_device:
             user = fetch_resource(client, local_device, 'users')
             if user is None:
-                user = User({'owner': None, 'department': None})
+                user = User({'email': None, 'department': None})
             if not is_updated(local_device, remote_device, user):
-                update(client, local_device, remote_device, user)
+                update(client, remote_device, user)
         

@@ -50,3 +50,12 @@ def mock_user():
         'email': 'mtorres@email.com',
         'department': {'name': 'Information Technology'}
     })
+
+@pytest.fixture()
+def mock_user_no_department():
+    """Returns a mock Samanage api user object"""
+    return User({
+        'name': 'Michael Torres', 
+        'email': 'mtorres@email.com',
+        'department': None
+    })

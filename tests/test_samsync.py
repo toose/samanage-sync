@@ -95,8 +95,7 @@ class TestSamSync:
                 'department': {'name': 'Information Technology'}
             },
             'is_updated': False
-        }
-        
+        },
     ]
     @pytest.mark.parametrize('case', device_test_case)
     def test_is_updated(self, case, mock_user):
@@ -107,6 +106,17 @@ class TestSamSync:
         remote_device = Hardware(case['remote_device'])
         local_device = Hardware(case['local_device'])
         assert is_updated(local_device, remote_device, mock_user) is case['is_updated']
+
+    def test_is_updated_returns_true_when_owners_and_dept_are_none(self,mock_user_no_department):
+        """Should return True when local.owner, remote.owner and user.department are None"""
+        # GIVEN mock local, remote and user objects
+        # WHEN remote.owner, local.owner and user.department are None
+        # THEN return True, signifying that the device is already up-to-date
+        remote_device = Hardware({'name': 'PC01', 'owner': None})
+        local_device = Hardware({'name': 'PC01', 'owner': None})
+        user = User({'name': 'John Smith', 'department': None})
+
+        assert is_updated(local_device, remote_device, user) is True
 
     def test_is_updated_when_user_returns_none(self):
         """When User is none, a default user is used"""
@@ -157,7 +167,7 @@ class TestSamSync:
         actual_payload = _build_payload(user)
         expected_payload = {
             'owner': {'email': f'{user.email}'},
-            'department': {'name': '%s' % user.department['name']}
+            'department': user.department
             }
         
         assert expected_payload == actual_payload
@@ -180,7 +190,7 @@ class TestSamSync:
             }
         })
 
-        update(client, local_device, remote_device, mock_user)
+        update(client, remote_device, mock_user)
         samsync.Samanage.put.assert_called_with('hardwares', 
                                                 payload,
                                                 remote_device.id)

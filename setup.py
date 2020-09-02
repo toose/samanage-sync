@@ -5,7 +5,7 @@ with open('README.md', 'r') as file:
 
 setuptools.setup(
     name='samsync-toose',
-    version="0.8.0",
+    version="0.2.0",
     author="Christopher DiTusa",
     author_email="cditusa@gmail.com",
     description="sync on-prem resources with Samanage SaaS inventory",
