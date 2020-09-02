@@ -108,9 +108,10 @@ class TestSamSync:
         local_device = Hardware(case['local_device'])
         assert is_updated(local_device, remote_device, mock_user) is case['is_updated']
 
-    def test_is_updated_when_user_is_returns_none(self):
-        user = User({'owner': {'name': ''}, 'department': {'name': ''}})
-        local_device = {'name': 'PC01', 'owner': 'John Smith'}
+    def test_is_updated_when_user_returns_none(self):
+        """When User is none, a default user is used"""
+        user = User({'owner': None, 'department': None})
+        local_device = Hardware({'name': 'PC01', 'owner': {'name': 'John Smith'}})
         remote_device = Hardware({
             'owner': {'name': 'John Smith'},
             'department': {'name': 'Information Technology'}

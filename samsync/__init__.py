@@ -54,10 +54,18 @@ def is_updated(local, remote, user):
     """Returns True if the remote device attributes are up-to-date
     with the local device attributes. False otherwise.
     """
+    # If any of these values are None, return False to avoid calling .get
+    # on a NoneType (when it should be a dict)
     if local.owner is None or remote.owner is None or user.department is None:
         return False
-    elif local.owner.get('name').lower() == remote.owner.get('name').lower():
-        if remote.department.get('name').lower() == user.department.get('name').lower():
+
+    local_owner = local.owner.get('name').lower()
+    remote_owner = remote.owner.get('name').lower()
+    remote_dept = remote.department.get('name').lower()
+    user_dept = user.department.get('name').lower()
+
+    if local_owner == remote_owner:
+        if remote_dept == user_dept:
             return True
 
     return False
@@ -94,7 +102,7 @@ def main():
         if remote_device:
             user = fetch_resource(client, local_device, 'users')
             if user is None:
-                user = User({'owner': {'name': None}, 'department': {'name': None}})
+                user = User({'owner': None, 'department': None})
             if not is_updated(local_device, remote_device, user):
                 update(client, local_device, remote_device, user)
         
