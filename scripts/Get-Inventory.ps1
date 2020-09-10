@@ -14,4 +14,8 @@ foreach($domain in $config.Domains) {
         -Properties $config.Properties | Select-Object name, @{n="owner";e={$_.description}}
 }
 
-Out-File -FilePath $Destination -InputObject (ConvertTo-Json $inventory)
+# Using .NET libraries becuase Out-File with utf8 encoding always includes
+# byte order marks, which the pyhon script can not ingest
+$inventory = ConvertTo-Json $inventory
+$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+[System.IO.File]::WriteAllLines($Destination, $inventory, $Utf8NoBomEncoding)
